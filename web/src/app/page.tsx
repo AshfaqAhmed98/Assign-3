@@ -1,7 +1,23 @@
+"use client";
+
 import Image from "next/image";
-import { ArrowDownRight } from "lucide-react";
+import { ArrowDownRight, Clock3, Flame, Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import { type Workout, workoutsApi } from "@/lib/workouts";
+
+const starterWorkouts: Workout[] = [];
 
 export default function Home() {
+  const [workouts, setWorkouts] = useState<Workout[]>(starterWorkouts);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(workoutsApi)
+      .then((response) => response.json())
+      .then((data: Workout[] | { value: Workout[] }) => setWorkouts(Array.isArray(data) ? data : data.value))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="app-shell">
       <header className="fit-navbar">
@@ -28,7 +44,19 @@ export default function Home() {
           </div>
           <div className="hero-art"><Image src="/banner.png" alt="Person exercising on a gym machine" width={343} height={343} priority /></div>
         </section>
-        <section id="library" className="library-anchor" aria-label="Workout library" />
+        <section id="library" className="library-section" aria-labelledby="library-heading">
+          <div className="library-heading">
+            <div>
+              <h2 id="library-heading">THE LIBRARY</h2>
+              <p>Twelve lifts covering every major muscle group.</p>
+            </div>
+          </div>
+          {loading && <p className="library-status">Loading workouts...</p>}
+          {!loading && <div className="workout-grid">{workouts.map((workout) => <a className="workout-card" href={`/workouts/${workout.id}`} key={workout.id}>
+            <div className="workout-image"><img src={workout.image} alt={workout.name} /><span className="difficulty-badge">{workout.difficulty.toUpperCase()}</span></div>
+            <div className="workout-body"><div className="group-tags">{workout.muscleGroups.map((group) => <span key={group}>{group.toUpperCase()}</span>)}</div><h3>{workout.name.toUpperCase()}</h3><p>{workout.equipment}</p><div className="workout-meta"><span><Clock3 size={12} /> {workout.duration} min</span><span><Flame size={12} /> {workout.caloriesBurned} kcal</span><span><Star size={12} fill="currentColor" /> {workout.rating}</span></div></div>
+          </a>)}</div>}
+        </section>
       </main>
     </div>
   );
