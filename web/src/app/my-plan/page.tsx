@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, Flame, Star, Trash2 } from "lucide-react";
+import { ChevronDown, Clock3, Flame, Star, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -29,12 +29,16 @@ function writeIds(key: string, ids: number[]) {
   window.dispatchEvent(new Event("fitlog-storage"));
 }
 
+type SortKey = "duration" | "calories" | "rating";
+
 export default function MyPlanPage() {
   const [tab, setTab] = useState<"plan" | "saved">("plan");
+  const [sortBy, setSortBy] = useState<SortKey>("duration");
   const [planIds, setPlanIds] = useState<number[]>([]);
   const [savedIds, setSavedIds] = useState<number[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState("");
 
   useEffect(() => {
     const syncTabFromLocation = () => {
@@ -98,9 +102,26 @@ export default function MyPlanPage() {
     [workouts, activeIds],
   );
 
+  const sortedWorkouts = useMemo(() => {
+    const next = [...visibleWorkouts];
+
+    next.sort((a, b) => {
+      if (sortBy === "calories") return b.caloriesBurned - a.caloriesBurned;
+      if (sortBy === "rating") return b.rating - a.rating;
+      return b.duration - a.duration;
+    });
+
+    return next;
+  }, [sortBy, visibleWorkouts]);
+
   const exercises = activeIds.length;
   const minutes = visibleWorkouts.reduce((total, workout) => total + workout.duration, 0);
   const calories = visibleWorkouts.reduce((total, workout) => total + workout.caloriesBurned, 0);
+
+  const notify = (message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 2200);
+  };
 
   const removeWorkout = (id: number) => {
     const targetKey = tab === "plan" ? planKey : savedKey;
@@ -109,6 +130,15 @@ export default function MyPlanPage() {
     writeIds(targetKey, next);
     if (tab === "plan") setPlanIds(next);
     else setSavedIds(next);
+    notify(tab === "plan" ? "Workout removed from plan" : "Workout removed from saved");
+  };
+
+  const removeAll = () => {
+    const targetKey = tab === "plan" ? planKey : savedKey;
+    writeIds(targetKey, []);
+    if (tab === "plan") setPlanIds([]);
+    else setSavedIds([]);
+    notify(tab === "plan" ? "All workouts removed from plan" : "All saved workouts removed");
   };
 
   const markDone = (id: number) => {
@@ -116,6 +146,7 @@ export default function MyPlanPage() {
     const next = current.filter((value) => value !== id);
     writeIds(planKey, next);
     setPlanIds(next);
+    notify("Workout marked as done");
   };
 
   return (
@@ -169,14 +200,38 @@ export default function MyPlanPage() {
             </button>
           </div>
 
-          <button type="button" className="plan-sort-button">
-            Sort By
-          </button>
+          <div className="plan-actions-inline">
+            <button
+              type="button"
+              className="plan-remove-all-button"
+              onClick={removeAll}
+              disabled={activeIds.length === 0}
+            >
+              <X size={14} /> Remove All
+            </button>
+
+            <label className="plan-sort-wrapper" htmlFor="plan-sort">
+              <span className="plan-sort-label">Sort By</span>
+              <div className="plan-sort-field">
+                <select
+                  id="plan-sort"
+                  className="plan-sort-select"
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value as SortKey)}
+                >
+                  <option value="duration">Duration</option>
+                  <option value="calories">Calories</option>
+                  <option value="rating">Rating</option>
+                </select>
+                <ChevronDown size={14} className="plan-sort-chevron" />
+              </div>
+            </label>
+          </div>
         </div>
 
         {loading ? (
           <div className="plan-loading">Loading workouts...</div>
-        ) : visibleWorkouts.length === 0 ? (
+        ) : sortedWorkouts.length === 0 ? (
           <div className="empty-plan">
             <h2>NOTHING HERE YET</h2>
             <p>Browse the library and add a lift to get today moving.</p>
@@ -186,7 +241,7 @@ export default function MyPlanPage() {
           </div>
         ) : (
           <div className="plan-list">
-            {visibleWorkouts.map((workout) => (
+            {sortedWorkouts.map((workout) => (
               <article className="plan-card" key={workout.id}>
                 <div className="plan-card-image">
                   <Image src={workout.image} alt={workout.name} width={180} height={120} />
@@ -205,7 +260,7 @@ export default function MyPlanPage() {
                       aria-label={`Remove ${workout.name}`}
                       onClick={() => removeWorkout(workout.id)}
                     >
-                      <Trash2 size={16} />
+                      <X size={16} />
                     </button>
                   </div>
 
@@ -225,25 +280,26 @@ export default function MyPlanPage() {
                     <Link href={`/workouts/${workout.id}`} className="plan-view-button">
                       View Details
                     </Link>
-                    <button
-                      type="button"
-                      className="plan-done-button"
-                      onClick={() => markDone(workout.id)}
-                    >
-                      Mark as Done
-                    </button>
-                    <button
-                      type="button"
-                      className="plan-remove-button"
-                      aria-label={`Remove ${workout.name}`}
-                      onClick={() => removeWorkout(workout.id)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {tab === "plan" && (
+                      <button
+                        type="button"
+                        className="plan-done-button"
+                        onClick={() => markDone(workout.id)}
+                      >
+                        Mark as Done
+                      </button>
+                    )}
                   </div>
                 </div>
               </article>
             ))}
+          </div>
+        )}
+
+        {toast && (
+          <div className="fit-toast" role="status">
+            <span className="fit-toast-icon"><Star size={12} fill="currentColor" /></span>
+            <span>{toast}</span>
           </div>
         )}
       </main>

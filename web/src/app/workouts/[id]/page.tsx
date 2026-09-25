@@ -1,18 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { workoutsApi, type Workout } from "@/lib/workouts";
+import { getWorkoutById } from "@/lib/workouts";
 import DetailActions from "@/components/DetailActions";
 import FitNavbar from "@/components/FitNavbar";
 
-async function getWorkout(id: string): Promise<Workout | undefined> {
-  const response = await fetch(workoutsApi, { cache: "no-store" });
-  const data: Workout[] | { value: Workout[] } = await response.json();
-  const workouts = Array.isArray(data) ? data : data.value;
-  return workouts.find((workout) => String(workout.id) === id);
-}
-
 export default async function WorkoutDetail({ params }: PageProps<"/workouts/[id]">) {
-  const workout = await getWorkout((await params).id);
+  const workout = await getWorkoutById((await params).id);
 
   if (!workout) {
     return <main className="detail-missing"><h1>Workout not found</h1><Link href="/#library">Back to library</Link></main>;

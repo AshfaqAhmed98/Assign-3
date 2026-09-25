@@ -1,63 +1,15 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowDownRight, Clock3, Flame, Star } from "lucide-react";
-import { useEffect, useState } from "react";
-import { type Workout, workoutsApi } from "@/lib/workouts";
+import FitNavbar from "@/components/FitNavbar";
+import { getWorkouts } from "@/lib/workouts";
 
-const starterWorkouts: Workout[] = [];
-
-export default function Home() {
-  const [workouts, setWorkouts] = useState<Workout[]>(starterWorkouts);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadWorkouts = async () => {
-      try {
-        const response = await fetch(workoutsApi, { cache: "no-store" });
-        const data: Workout[] | { value: Workout[] } = await response.json();
-        const nextWorkouts = Array.isArray(data) ? data : data.value;
-
-        if (isMounted) {
-          setWorkouts(Array.isArray(nextWorkouts) ? nextWorkouts : []);
-        }
-      } catch {
-        if (isMounted) {
-          setWorkouts([]);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    loadWorkouts();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+export default async function Home() {
+  const workouts = await getWorkouts();
 
   return (
     <div className="app-shell">
-      <header className="fit-navbar">
-        <Link className="fit-brand" href="/#top" aria-label="Fitlog home">
-          <Image src="/logo.png" alt="" width={25} height={25} priority />
-          <span>FITLOG</span>
-        </Link>
-        <nav className="fit-nav-links" aria-label="Primary navigation">
-          <Link className="fit-nav-link active" href="/#library">Workouts</Link>
-          <Link className="fit-nav-link" href="/my-plan">My Plan</Link>
-        </nav>
-        <div className="fit-nav-status">
-          <Link className="status-link" href="/my-plan?tab=plan">Plan <span className="plan-count">0</span></Link>
-          <Link className="status-link saved-status" href="/my-plan?tab=saved">Saved <span className="saved-count">0</span></Link>
-        </div>
-      </header>
+      <FitNavbar />
       <main id="top">
         <section className="hero" aria-labelledby="hero-heading">
           <div className="hero-copy">
@@ -75,17 +27,11 @@ export default function Home() {
               <p>Twelve lifts covering every major muscle group.</p>
             </div>
           </div>
-          {loading && (
-            <div className="library-loading" aria-live="polite">
-              <span className="loading-spinner" aria-hidden="true" />
-              <span>Loading workouts...</span>
-            </div>
-          )}
-          {!loading && workouts.length > 0 && <div className="workout-grid">{workouts.map((workout) => <a className="workout-card" href={`/workouts/${workout.id}`} key={workout.id}>
+          {workouts.length === 0 && <p className="library-status">Workouts unavailable right now. Please try again in a moment.</p>}
+          {workouts.length > 0 && <div className="workout-grid">{workouts.map((workout) => <Link className="workout-card" href={`/workouts/${workout.id}`} key={workout.id}>
             <div className="workout-image"><img src={workout.image} alt={workout.name} /><span className="difficulty-badge">{workout.difficulty.toUpperCase()}</span></div>
             <div className="workout-body"><div className="group-tags">{workout.muscleGroups.map((group) => <span key={group}>{group.toUpperCase()}</span>)}</div><h3>{workout.name.toUpperCase()}</h3><p>{workout.equipment}</p><div className="workout-meta"><span><Clock3 size={12} /> {workout.duration} min</span><span><Flame size={12} /> {workout.caloriesBurned} kcal</span><span><Star size={12} fill="currentColor" /> {workout.rating}</span></div></div>
-          </a>)}</div>}
-          {!loading && workouts.length === 0 && <p className="library-status">Workouts unavailable right now. Please try again in a moment.</p>}
+          </Link>)}</div>}
         </section>
       </main>
 

@@ -40,6 +40,17 @@ export default function FitNavbar() {
 
   const isPlanPage = pathname === "/my-plan";
 
+  const handleTabLink = (tab: "plan" | "saved") => (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (pathname !== "/my-plan") {
+      return;
+    }
+
+    event.preventDefault();
+    const nextUrl = `/my-plan?tab=${tab}`;
+    window.history.pushState({}, "", nextUrl);
+    window.dispatchEvent(new Event("plan-tab-change"));
+  };
+
   return (
     <header className="fit-navbar">
       <Link className="fit-brand" href="/#top" aria-label="Fitlog home">
@@ -57,10 +68,10 @@ export default function FitNavbar() {
       </nav>
 
       <div className="fit-nav-status">
-        <Link className="status-link" href="/my-plan?tab=plan">
+        <Link className="status-link" href="/my-plan?tab=plan" onClick={handleTabLink("plan")}>
           Plan <span className="plan-count">{planCount}</span>
         </Link>
-        <Link className="status-link saved-status" href="/my-plan?tab=saved">
+        <Link className="status-link saved-status" href="/my-plan?tab=saved" onClick={handleTabLink("saved")}>
           Saved <span className="saved-count">{savedCount}</span>
         </Link>
       </div>
