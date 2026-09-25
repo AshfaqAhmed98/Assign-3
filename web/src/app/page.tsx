@@ -13,10 +13,33 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(workoutsApi)
-      .then((response) => response.json())
-      .then((data: Workout[] | { value: Workout[] }) => setWorkouts(Array.isArray(data) ? data : data.value))
-      .finally(() => setLoading(false));
+    let isMounted = true;
+
+    const loadWorkouts = async () => {
+      try {
+        const response = await fetch(workoutsApi, { cache: "no-store" });
+        const data: Workout[] | { value: Workout[] } = await response.json();
+        const nextWorkouts = Array.isArray(data) ? data : data.value;
+
+        if (isMounted) {
+          setWorkouts(Array.isArray(nextWorkouts) ? nextWorkouts : []);
+        }
+      } catch {
+        if (isMounted) {
+          setWorkouts([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadWorkouts();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
@@ -31,8 +54,8 @@ export default function Home() {
           <Link className="fit-nav-link" href="/my-plan">My Plan</Link>
         </nav>
         <div className="fit-nav-status">
-          <Link className="status-link" href="/my-plan">Plan <span className="plan-count">0</span></Link>
-          <Link className="status-link saved-status" href="/my-plan">Saved <span className="saved-count">0</span></Link>
+          <Link className="status-link" href="/my-plan?tab=plan">Plan <span className="plan-count">0</span></Link>
+          <Link className="status-link saved-status" href="/my-plan?tab=saved">Saved <span className="saved-count">0</span></Link>
         </div>
       </header>
       <main id="top">
@@ -52,13 +75,29 @@ export default function Home() {
               <p>Twelve lifts covering every major muscle group.</p>
             </div>
           </div>
-          {loading && <p className="library-status">Loading workouts...</p>}
-          {!loading && <div className="workout-grid">{workouts.map((workout) => <a className="workout-card" href={`/workouts/${workout.id}`} key={workout.id}>
+          {loading && (
+            <div className="library-loading" aria-live="polite">
+              <span className="loading-spinner" aria-hidden="true" />
+              <span>Loading workouts...</span>
+            </div>
+          )}
+          {!loading && workouts.length > 0 && <div className="workout-grid">{workouts.map((workout) => <a className="workout-card" href={`/workouts/${workout.id}`} key={workout.id}>
             <div className="workout-image"><img src={workout.image} alt={workout.name} /><span className="difficulty-badge">{workout.difficulty.toUpperCase()}</span></div>
             <div className="workout-body"><div className="group-tags">{workout.muscleGroups.map((group) => <span key={group}>{group.toUpperCase()}</span>)}</div><h3>{workout.name.toUpperCase()}</h3><p>{workout.equipment}</p><div className="workout-meta"><span><Clock3 size={12} /> {workout.duration} min</span><span><Flame size={12} /> {workout.caloriesBurned} kcal</span><span><Star size={12} fill="currentColor" /> {workout.rating}</span></div></div>
           </a>)}</div>}
+          {!loading && workouts.length === 0 && <p className="library-status">Workouts unavailable right now. Please try again in a moment.</p>}
         </section>
       </main>
+
+      <footer className="fit-footer">
+        <div className="fit-footer-content">
+          <div className="fit-brand fit-footer-brand" aria-label="Fitlog home">
+            <Image src="/logo.png" alt="" width={20} height={20} priority />
+            <span>FITLOG</span>
+          </div>
+          <p>© 2026 FitLog — Workout Library. Train hard, log honest.</p>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -12,6 +12,8 @@ const planKey = "fitlog-plan";
 const savedKey = "fitlog-saved";
 
 function readIds(key: string): number[] {
+  if (typeof window === "undefined") return [];
+
   try {
     const value = JSON.parse(window.localStorage.getItem(key) ?? "[]");
     return Array.isArray(value) ? (value as number[]) : [];
@@ -21,6 +23,8 @@ function readIds(key: string): number[] {
 }
 
 function writeIds(key: string, ids: number[]) {
+  if (typeof window === "undefined") return;
+
   window.localStorage.setItem(key, JSON.stringify(ids));
   window.dispatchEvent(new Event("fitlog-storage"));
 }
@@ -31,6 +35,23 @@ export default function MyPlanPage() {
   const [savedIds, setSavedIds] = useState<number[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const syncTabFromLocation = () => {
+      const params = new URLSearchParams(window.location.search);
+      const nextTab = params.get("tab") === "saved" ? "saved" : "plan";
+      setTab(nextTab);
+    };
+
+    syncTabFromLocation();
+    window.addEventListener("popstate", syncTabFromLocation);
+    window.addEventListener("plan-tab-change", syncTabFromLocation);
+
+    return () => {
+      window.removeEventListener("popstate", syncTabFromLocation);
+      window.removeEventListener("plan-tab-change", syncTabFromLocation);
+    };
+  }, []);
 
   useEffect(() => {
     const syncFromStorage = () => {
@@ -127,14 +148,22 @@ export default function MyPlanPage() {
             <button
               type="button"
               className={tab === "plan" ? "plan-tab active" : "plan-tab"}
-              onClick={() => setTab("plan")}
+              onClick={() => {
+                setTab("plan");
+                window.history.replaceState({}, "", "/my-plan?tab=plan");
+                window.dispatchEvent(new Event("plan-tab-change"));
+              }}
             >
               Today&apos;s Plan
             </button>
             <button
               type="button"
               className={tab === "saved" ? "plan-tab active" : "plan-tab"}
-              onClick={() => setTab("saved")}
+              onClick={() => {
+                setTab("saved");
+                window.history.replaceState({}, "", "/my-plan?tab=saved");
+                window.dispatchEvent(new Event("plan-tab-change"));
+              }}
             >
               Saved
             </button>

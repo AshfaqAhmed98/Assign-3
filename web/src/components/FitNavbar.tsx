@@ -9,6 +9,8 @@ const planKey = "fitlog-plan";
 const savedKey = "fitlog-saved";
 
 function countItems(key: string) {
+  if (typeof window === "undefined") return 0;
+
   try {
     const value = JSON.parse(window.localStorage.getItem(key) ?? "[]");
     return Array.isArray(value) ? value.length : 0;
@@ -55,10 +57,10 @@ export default function FitNavbar() {
       </nav>
 
       <div className="fit-nav-status">
-        <Link className="status-link" href="/my-plan">
+        <Link className="status-link" href="/my-plan?tab=plan">
           Plan <span className="plan-count">{planCount}</span>
         </Link>
-        <Link className="status-link saved-status" href="/my-plan">
+        <Link className="status-link saved-status" href="/my-plan?tab=saved">
           Saved <span className="saved-count">{savedCount}</span>
         </Link>
       </div>
