@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowDownRight, Clock3, Flame, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type Workout, workoutsApi } from "@/lib/workouts";
@@ -21,17 +22,17 @@ export default function Home() {
   return (
     <div className="app-shell">
       <header className="fit-navbar">
-        <a className="fit-brand" href="#top" aria-label="Fitlog home">
+        <Link className="fit-brand" href="/#top" aria-label="Fitlog home">
           <Image src="/logo.png" alt="" width={25} height={25} priority />
           <span>FITLOG</span>
-        </a>
+        </Link>
         <nav className="fit-nav-links" aria-label="Primary navigation">
-          <a className="fit-nav-link active" href="#workouts">Workouts</a>
-          <a className="fit-nav-link" href="#plan">My Plan</a>
+          <Link className="fit-nav-link active" href="/#library">Workouts</Link>
+          <Link className="fit-nav-link" href="/my-plan">My Plan</Link>
         </nav>
         <div className="fit-nav-status">
-          <a className="status-link" href="/my-plan">Plan <span className="plan-count">0</span></a>
-          <a className="status-link saved-status" href="/my-plan">Saved <span className="saved-count">0</span></a>
+          <Link className="status-link" href="/my-plan">Plan <span className="plan-count">0</span></Link>
+          <Link className="status-link saved-status" href="/my-plan">Saved <span className="saved-count">0</span></Link>
         </div>
       </header>
       <main id="top">
