@@ -31,6 +31,22 @@ function writeIds(key: string, ids: number[]) {
 
 type SortKey = "duration" | "calories" | "rating";
 
+function getEmptyStateCopy(currentTab: "plan" | "saved") {
+  if (currentTab === "saved") {
+    return {
+      headline: "SAVED FOR LATER",
+      body: "Keep the moves you want to revisit when your energy is higher.",
+      action: "Go to workouts",
+    };
+  }
+
+  return {
+    headline: "NOTHING HERE YET",
+    body: "Browse the library and add a lift to get today moving.",
+    action: "Go to workouts",
+  };
+}
+
 export default function MyPlanPage() {
   const [tab, setTab] = useState<"plan" | "saved">("plan");
   const [sortBy, setSortBy] = useState<SortKey>("duration");
@@ -117,6 +133,7 @@ export default function MyPlanPage() {
   const exercises = activeIds.length;
   const minutes = visibleWorkouts.reduce((total, workout) => total + workout.duration, 0);
   const calories = visibleWorkouts.reduce((total, workout) => total + workout.caloriesBurned, 0);
+  const emptyState = getEmptyStateCopy(tab);
 
   const notify = (message: string) => {
     setToast(message);
@@ -131,14 +148,6 @@ export default function MyPlanPage() {
     if (tab === "plan") setPlanIds(next);
     else setSavedIds(next);
     notify(tab === "plan" ? "Workout removed from plan" : "Workout removed from saved");
-  };
-
-  const removeAll = () => {
-    const targetKey = tab === "plan" ? planKey : savedKey;
-    writeIds(targetKey, []);
-    if (tab === "plan") setPlanIds([]);
-    else setSavedIds([]);
-    notify(tab === "plan" ? "All workouts removed from plan" : "All saved workouts removed");
   };
 
   const markDone = (id: number) => {
@@ -201,15 +210,6 @@ export default function MyPlanPage() {
           </div>
 
           <div className="plan-actions-inline">
-            <button
-              type="button"
-              className="plan-remove-all-button"
-              onClick={removeAll}
-              disabled={activeIds.length === 0}
-            >
-              <X size={14} /> Remove All
-            </button>
-
             <label className="plan-sort-wrapper" htmlFor="plan-sort">
               <span className="plan-sort-label">Sort By</span>
               <div className="plan-sort-field">
@@ -233,10 +233,10 @@ export default function MyPlanPage() {
           <div className="plan-loading">Loading workouts...</div>
         ) : sortedWorkouts.length === 0 ? (
           <div className="empty-plan">
-            <h2>NOTHING HERE YET</h2>
-            <p>Browse the library and add a lift to get today moving.</p>
+            <h2>{emptyState.headline}</h2>
+            <p>{emptyState.body}</p>
             <Link href="/" className="plan-empty-button">
-              Go to workouts
+              {emptyState.action}
             </Link>
           </div>
         ) : (
